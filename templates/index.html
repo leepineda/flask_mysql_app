@@ -1,0 +1,44 @@
+<!--
+
+Step 1 code
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Flask App</title>
+</head>
+<body>
+    <h1>Hello! Flask is working! 🎉</h1>
+</body>
+</html>
+
+-->
+<!DOCTYPE html>
+<html>
+<head><title>Users</title></head>
+<body>
+    <h1>Users from Database</h1>
+    <table border="1">
+        <tr>
+            <th>ID</th><th>Name</th><th>Email</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+        </tr>
+        <!--add a button that uses the delete route-->
+        <form method="POST" action="/delete/{{ user.id }}">
+            <button type="submit">Delete</button>
+        </form>
+        {% endfor %}
+    </table>
+
+    <a href="/add"><button>Add User</button></a>
+    <a href="/search"><button>Search User</button></a>
+
+</body>
+</html>
+
+<!-- in Jinja2 double curly braces (Flask's template engine) outputs a variable. Curly-percent tags is for logic like for loops and if statements.-->
