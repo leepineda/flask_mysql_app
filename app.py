@@ -1,17 +1,22 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect
 import pymysql
+
+load_dotenv()   # reads .env and puts values into os.environment
 
 app = Flask(__name__)
 
 #Sql connection 
 def get_connection():
     return pymysql.connect(
-        host="localhost",
-        user="root",        #your sql username
-        password="",          # your MySQL password
-        database="test_db",
+        host=os.getenv("DB_HOST", "localhost"),
+        user=os.getenv("DB_USER", "root"),
+        password=os.getenv("DB_PASSWORD", ""),
+        database=os.getenv("DB_NAME", "test_db"),
         cursorclass=pymysql.cursors.DictCursor
     )
+
 
 @app.route("/")
 def home():
