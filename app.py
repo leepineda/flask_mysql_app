@@ -17,7 +17,6 @@ def get_connection():
         cursorclass=pymysql.cursors.DictCursor
     )
 
-
 @app.route("/")
 def home():
     #we added this block to fetch data from the users table
