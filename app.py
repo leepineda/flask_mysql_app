@@ -1,75 +1,60 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect
-import pymysql
+from flask_sqlalchemy import SQLAlchemy
 
-load_dotenv()   # reads .env and puts values into os.environment
+load_dotenv()
 
 app = Flask(__name__)
 
-#Sql connection 
-def get_connection():
-    return pymysql.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "test_db"),
-        cursorclass=pymysql.cursors.DictCursor
-    )
+# SQLAlchemy config — replaces get_connection()
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
+    f"@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+db = SQLAlchemy(app)
+
+# This replaces your CREATE TABLE — SQLAlchemy knows your table structure now
+class User(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+
+# Home — fetch all users
 @app.route("/")
 def home():
-    #we added this block to fetch data from the users table
-    connection = get_connection()
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT * FROM users")
-        users = cursor.fetchall()
-    connection.close()
-    #until here
+    users = User.query.all()
     return render_template("index.html", users=users)
 
-#add a search route sql syntax still
+# Search
 @app.route("/search")
 def search():
-    query = request.args.get("q", "")   # reads ?q=Alice from the URL
-    connection = get_connection()
-    with connection.cursor() as cursor:
-        cursor.execute(
-            "SELECT * FROM users WHERE name LIKE %s",
-            (f"%{query}%",)
-        )
-        results = cursor.fetchall()
-    connection.close()
+    query = request.args.get("q", "")
+    results = User.query.filter(User.name.like(f"%{query}%")).all()
     return render_template("search.html", results=results, query=query)
 
-#add a post Route ADDING/CREATING
+# Add user
 @app.route("/add", methods=["GET", "POST"])
 def add_user():
     if request.method == "POST":
-        name = request.form["name"]    # reads from the form
+        name = request.form["name"]
         email = request.form["email"]
-        connection = get_connection()
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO users (name, email) VALUES (%s, %s)",
-                (name, email)
-            )
-        connection.commit()   # IMPORTANT: saves the change
-        connection.close()
-        return redirect("/")  # go back to home page
+        new_user = User(name=name, email=email)
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect("/")
     return render_template("add.html")
-    #add redirect import at the top 
 
-#delete route, note that a route is like a function
+# Delete user
 @app.route("/delete/<int:user_id>", methods=["POST"])
 def delete_user(user_id):
-    connection = get_connection()
-    with connection.cursor() as cursor:
-        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-    connection.commit()
-    connection.close()
+    user = User.query.get_or_404(user_id)
+    db.session.delete(user)
+    db.session.commit()
     return redirect("/")
 
-#initialize the application
 if __name__ == "__main__":
     app.run(debug=True)
