@@ -54,6 +54,13 @@ def add_user():
                 "INSERT INTO users (name, email) VALUES (%s, %s)",
                 (name, email)
             )
+            new_user_id = cursor.lastrowid
+
+            cursor.execute(
+                "INSERT INTO user_roles (user_id, role_id) VALUES (%s, %s)",
+                (new_user_id, 3)
+            )
+
         connection.commit()   # IMPORTANT: saves the change
         connection.close()
         return redirect("/")  # go back to home page
