@@ -10,7 +10,7 @@ CREATE TABLE users (
 
 INSERT INTO users (name, email) VALUES (
     "lee", "leepineda@gmail.com"
-)
+); 
 
 CREATE TABLE roles (
     role_id INT PRIMARY KEY AUTO_INCREMENT,

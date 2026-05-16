@@ -48,22 +48,32 @@ def add_user():
     if request.method == "POST":
         name = request.form["name"]    # reads from the form
         email = request.form["email"]
+
         connection = get_connection()
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO users (name, email) VALUES (%s, %s)",
-                (name, email)
-            )
-            new_user_id = cursor.lastrowid
+        try: #changed the logic to use a try catch error or a transaction equivalent
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO users (name, email) VALUES (%s, %s)",
+                    (name, email)
+                )
+                new_user_id = cursor.lastrowid 
 
-            cursor.execute(
-                "INSERT INTO user_roles (user_id, role_id) VALUES (%s, %s)",
-                (new_user_id, 3)
-            )
+                cursor.execute(
+                    "INSERT INTO user_roles (user_id, role_id) VALUES (%s, %s)",
+                    (new_user_id, 3)
+                )
 
-        connection.commit()   # IMPORTANT: saves the change
-        connection.close()
-        return redirect("/")  # go back to home page
+            connection.commit()   #save the change AFTER its done
+            return redirect("/")  # go back to home page IF THE TRANSACTION IS SUCNESFUL
+
+        except Exception as e:
+            connection.rollback() #rollback when the transaction fails
+            print(f"Database error occured: {e}")
+            return "An error occurred while creating the user.", 500
+
+        finally:    
+            connection.close()
+           
     return render_template("add.html")
     #add redirect import at the top 
 
@@ -72,7 +82,7 @@ def add_user():
 def delete_user(user_id):
     connection = get_connection()
     with connection.cursor() as cursor:
-        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        cursor.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
     connection.commit()
     connection.close()
     return redirect("/")
